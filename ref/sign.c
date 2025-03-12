@@ -66,6 +66,38 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   return 0;
 }
 
+// Compute mu = CRH(tr, pre, msg)
+static void compute_message_representative(
+        uint8_t *mu,
+        keccak_state *state,
+        const uint8_t *tr,
+        const uint8_t *pre,
+        size_t prelen,
+        const uint8_t *m,
+        size_t mlen) {
+  shake256_init(state);
+  shake256_absorb(state, tr, TRBYTES);
+  shake256_absorb(state, pre, prelen);
+  shake256_absorb(state, m, mlen);
+  shake256_finalize(state);
+  shake256_squeeze(mu, CRHBYTES, state);
+}
+
+// Compute rhoprime = CRH(key, rnd, mu)
+static void compute_commitment_seed(
+        uint8_t *rhoprime,
+        keccak_state *state,
+        const uint8_t *key,
+        const uint8_t *rnd,
+        const uint8_t *mu) {
+  shake256_init(state);
+  shake256_absorb(state, key, SEEDBYTES);
+  shake256_absorb(state, rnd, RNDBYTES);
+  shake256_absorb(state, mu, CRHBYTES);
+  shake256_finalize(state);
+  shake256_squeeze(rhoprime, CRHBYTES, state);
+}
+
 /*************************************************
 * Name:        crypto_sign_signature_internal
 *
@@ -107,21 +139,9 @@ int crypto_sign_signature_internal(uint8_t *sig,
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
-  /* Compute mu = CRH(tr, pre, msg) */
-  shake256_init(&state);
-  shake256_absorb(&state, tr, TRBYTES);
-  shake256_absorb(&state, pre, prelen);
-  shake256_absorb(&state, m, mlen);
-  shake256_finalize(&state);
-  shake256_squeeze(mu, CRHBYTES, &state);
+  compute_message_representative(mu, &state, tr, pre, prelen, m, mlen);
 
-  /* Compute rhoprime = CRH(key, rnd, mu) */
-  shake256_init(&state);
-  shake256_absorb(&state, key, SEEDBYTES);
-  shake256_absorb(&state, rnd, RNDBYTES);
-  shake256_absorb(&state, mu, CRHBYTES);
-  shake256_finalize(&state);
-  shake256_squeeze(rhoprime, CRHBYTES, &state);
+  compute_commitment_seed(rhoprime, &state, key, rnd, mu);
 
   /* Expand matrix and transform vectors */
   polyvec_matrix_expand(mat, rho);
