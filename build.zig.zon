@@ -1,0 +1,11 @@
+.{
+    .name = .dilithium,
+    .version = "0.0.0",
+    .minimum_zig_version = "0.14.0",
+    .fingerprint = 0x9f42fe8fb2dd0635,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "ref",
+    },
+}
