@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) void {
 
     const dylib = b.addLibrary(.{
         .linkage = .dynamic,
-        .name = "pqcrystals_dilithium_ref",
+        .name = "dilithium",
         .root_module = dilithium_mod,
     });
 
