@@ -25,6 +25,7 @@ pub fn build(b: *std.Build) void {
         "reduce.c",
         "rounding.c",
         "sign.c",
+        "symmetric-shake.c",
     };
 
     const dilithium_mod = b.createModule(.{
@@ -37,7 +38,7 @@ pub fn build(b: *std.Build) void {
 
     dilithium_mod.addCSourceFiles(.{
         .root = b.path("ref"),
-        .files = &.{ "fips202.c", "symmetric-shake.c" },
+        .files = &.{"fips202.c"},
         .flags = &cflags,
     });
 
