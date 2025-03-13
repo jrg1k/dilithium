@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) void {
     };
 
     const dilithium_mod = b.createModule(.{
+        .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
         .omit_frame_pointer = true,
