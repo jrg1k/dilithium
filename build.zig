@@ -28,13 +28,19 @@ pub fn build(b: *std.Build) void {
         "symmetric-shake.c",
     };
 
-    const dilithium_mod = b.addModule("dilithium", .{
+    const dilithium_mod = b.createModule(.{
         .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
         .omit_frame_pointer = true,
         .single_threaded = true,
         .strip = true,
+    });
+
+    _ = b.addModule("dilithium", .{
+        .root_source_file = b.path("api.zig"),
+        .target = target,
+        .optimize = optimize,
     });
 
     dilithium_mod.addCSourceFiles(.{
