@@ -106,6 +106,37 @@ static void compute_commitment_seed(
   shake256_squeeze(rhoprime, CRHBYTES, state);
 }
 
+typedef struct {
+  uint8_t seedbuf[2*SEEDBYTES + TRBYTES + CRHBYTES];
+  keccak_state hash_state;
+  polyvecl mat[K];
+  polyvecl s1;
+  polyveck s2;
+  polyveck t0;
+} State;
+
+// static void crypto_sign_signature_init(
+//         State *state,
+//         const uint8_t *mu,
+//         const uint8_t rnd[RNDBYTES],
+//         const uint8_t *sk
+//         ) {
+//   uint8_t *rho, *tr, *key, *rhoprime;
+//   rho = state->seedbuf;
+//   tr = rho + SEEDBYTES;
+//   key = tr + TRBYTES;
+//   rhoprime = key + SEEDBYTES;
+//   unpack_sk(rho, tr, key, &state->t0, &state->s1, &state->s2, sk);
+//
+//   compute_commitment_seed(rhoprime, &state->hash_state, key, rnd, mu);
+//
+//   /* Expand matrix and transform vectors */
+//   polyvec_matrix_expand(state->mat, rho);
+//   polyvecl_ntt(&state->s1);
+//   polyveck_ntt(&state->s2);
+//   polyveck_ntt(&state->t0);
+// }
+
 /*************************************************
 * Name:        crypto_sign_signature_internal
 *
