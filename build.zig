@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
         "symmetric-shake.c",
     };
 
-    const dilithium_mod = b.createModule(.{
+    const dilithium_mod = b.addModule("dilithium", .{
         .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
