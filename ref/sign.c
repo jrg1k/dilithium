@@ -106,6 +106,119 @@ static void compute_commitment_seed(
   shake256_squeeze(rhoprime, CRHBYTES, state);
 }
 
+SignatureState crypto_sign_signature_init(
+        const uint8_t mu[CRHBYTES],
+        const uint8_t rnd[RNDBYTES],
+        const uint8_t sk[CRYPTO_SECRETKEYBYTES]
+        ) {
+  SignatureState state;
+  uint8_t *rho, *tr, *key, *rhoprime;
+  rho = state.seedbuf;
+  tr = rho + SEEDBYTES;
+  key = tr + TRBYTES;
+  rhoprime = key + SEEDBYTES;
+  unpack_sk(rho, tr, key, &state.t0, &state.s1, &state.s2, sk);
+
+  keccak_state hash_state;
+
+  compute_commitment_seed(rhoprime, &hash_state, key, rnd, mu);
+
+  /* Expand matrix and transform vectors */
+  polyvec_matrix_expand(state.mat, rho);
+  polyvecl_ntt(&state.s1);
+  polyveck_ntt(&state.s2);
+  polyveck_ntt(&state.t0);
+
+  return state;
+}
+
+void crypto_sign_signature_gen_commit(
+        uint8_t challenge[CRYPTO_CHALLENGE_BYTES],
+        uint16_t nonce,
+        SignatureState *state
+        ) {
+  uint8_t *rho, *tr, *key, *rhoprime;
+  rho = state->seedbuf;
+  tr = rho + SEEDBYTES;
+  key = tr + TRBYTES;
+  rhoprime = key + SEEDBYTES;
+  /* Sample intermediate vector y */
+  polyvecl_uniform_gamma1(&state->y, rhoprime, nonce);
+
+  /* Matrix-vector multiplication */
+  state->z = state->y;
+  polyvecl_ntt(&state->z);
+  polyvec_matrix_pointwise_montgomery(&state->w1, state->mat, &state->z);
+  polyveck_reduce(&state->w1);
+  polyveck_invntt_tomont(&state->w1);
+
+  /* Decompose w and call the random oracle */
+  polyveck_caddq(&state->w1);
+  polyveck_decompose(&state->w1, &state->w0, &state->w1);
+  polyveck_pack_w1(challenge, &state->w1);
+}
+
+int crypto_sign_signature_confirm_response(
+        uint8_t response[CRYPTO_RESPONSE_BYTES],
+        const uint8_t commit_hash[CTILDEBYTES],
+        SignatureState *state
+        ) {
+  poly cp;
+  poly_challenge(&cp, commit_hash);
+  poly_ntt(&cp);
+
+  /* Compute z, reject if it reveals secret */
+  polyvecl_pointwise_poly_montgomery(&state->z, &cp, &state->s1);
+  polyvecl_invntt_tomont(&state->z);
+  polyvecl_add(&state->z, &state->z, &state->y);
+  polyvecl_reduce(&state->z);
+  if(polyvecl_chknorm(&state->z, GAMMA1 - BETA))
+      return 1;
+
+  polyveck h;
+
+  /* Check that subtracting cs2 does not change high bits of w and low bits
+   * do not reveal secret information */
+  polyveck_pointwise_poly_montgomery(&h, &cp, &state->s2);
+  polyveck_invntt_tomont(&h);
+  polyveck_sub(&state->w0, &state->w0, &h);
+  polyveck_reduce(&state->w0);
+  if(polyveck_chknorm(&state->w0, GAMMA2 - BETA))
+      return 1;
+
+  /* Compute hints for w1 */
+  polyveck_pointwise_poly_montgomery(&h, &cp, &state->t0);
+  polyveck_invntt_tomont(&h);
+  polyveck_reduce(&h);
+  if(polyveck_chknorm(&h, GAMMA2))
+      return 1;
+
+  polyveck_add(&state->w0, &state->w0, &h);
+  unsigned int n = polyveck_make_hint(&h, &state->w0, &state->w1);
+  if(n > OMEGA)
+      return 1;
+
+  /* Write signature response */
+
+  for(int i = 0; i < L; ++i)
+    polyz_pack(response + i*POLYZ_PACKEDBYTES, &state->z.vec[i]);
+  response += L*POLYZ_PACKEDBYTES;
+
+  /* Encode h */
+  for(int i = 0; i < OMEGA + K; ++i)
+    response[i] = 0;
+
+  int k = 0;
+  for(int i = 0; i < K; ++i) {
+    for(int j = 0; j < N; ++j)
+      if(h.vec[i].coeffs[j] != 0)
+        response[k++] = j;
+
+    response[OMEGA + i] = k;
+  }
+  return 0;
+}
+
 /*************************************************
 * Name:        crypto_sign_signature_internal
 *

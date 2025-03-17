@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "fips202.h"
 #include "params.h"
 #include "polyvec.h"
 #include "poly.h"
@@ -22,6 +23,31 @@ int crypto_sign_signature_internal(uint8_t *sig,
                                    size_t prelen,
                                    const uint8_t rnd[RNDBYTES],
                                    const uint8_t *sk);
+
+typedef struct {
+  uint8_t seedbuf[2*SEEDBYTES + TRBYTES + CRHBYTES];
+  polyvecl mat[K], s1, y, z;
+  polyveck t0, s2, w1, w0;
+} SignatureState;
+
+
+#define crypto_sign_signature_init DILITHIUM_NAMESPACE(signature_init)
+SignatureState crypto_sign_signature_init(
+        const uint8_t mu[CRHBYTES],
+        const uint8_t rnd[RNDBYTES],
+        const uint8_t sk[CRYPTO_SECRETKEYBYTES]);
+
+#define crypto_sign_signature_gen_commit DILITHIUM_NAMESPACE(signature_gen_commit)
+void crypto_sign_signature_gen_commit(
+        uint8_t challenge[CRYPTO_CHALLENGE_BYTES],
+        uint16_t nonce,
+        SignatureState *state);
+
+#define crypto_sign_signature_confirm_response DILITHIUM_NAMESPACE(signature_confirm_response)
+int crypto_sign_signature_confirm_response(
+        uint8_t response[CRYPTO_RESPONSE_BYTES],
+        const uint8_t commit_hash[CTILDEBYTES],
+        SignatureState *state);
 
 #define crypto_sign_signature DILITHIUM_NAMESPACE(signature)
 int crypto_sign_signature(uint8_t *sig, size_t *siglen,
