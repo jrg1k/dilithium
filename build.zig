@@ -65,4 +65,10 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(dylib);
+
+    const lib_check = b.addLibrary(.{ .name = "check", .root_module = dilithium_mod });
+    const check = b.step("check", "Build check");
+    check.dependOn(&lib_check.step);
+
+
 }
