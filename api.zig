@@ -103,8 +103,8 @@ pub fn Dilithium(comptime p: Params) type {
             (N / 8) * p.l * (1 + bitlen(p.gamma1 - 1)) + p.omega + p.k;
 
         pub const keypair_internal = importNs(fn (
-            pk: *const [PK_BYTES]u8,
-            sk: *const [SK_BYTES]u8,
+            pk: *[PK_BYTES]u8,
+            sk: *[SK_BYTES]u8,
             seed: *const [SEEDBYTES]u8,
         ) callconv(.c) c_int, "keypair_internal");
 
