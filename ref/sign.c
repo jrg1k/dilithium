@@ -28,7 +28,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   return crypto_sign_keypair_internal(pk, sk, seed);
 }
 
-int crypto_sign_keypair_internal(uint8_t *pk, uint8_t *sk, uint8_t seed[SEEDBYTES]) {
+int crypto_sign_keypair_internal(uint8_t *pk, uint8_t *sk, const uint8_t seed[SEEDBYTES]) {
   uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   uint8_t tr[TRBYTES];
   const uint8_t *rho, *rhoprime, *key;
