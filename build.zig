@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
         "symmetric-shake.c",
     };
 
-    const dilithium_mod = b.createModule(.{
+    const lib_mod = b.createModule(.{
         .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
@@ -42,7 +42,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    dilithium_mod.addCSourceFiles(.{
+    lib_mod.addCSourceFiles(.{
         .root = b.path("ref"),
         .files = &.{"fips202.c"},
         .flags = &cflags,
@@ -51,24 +51,29 @@ pub fn build(b: *std.Build) void {
     const modes = .{ "2", "3", "5" };
 
     inline for (modes) |m| {
-        dilithium_mod.addCSourceFiles(.{
+        lib_mod.addCSourceFiles(.{
             .root = b.path("ref"),
             .files = &cfiles,
             .flags = &(cflags ++ .{"-DDILITHIUM_MODE=" ++ m}),
         });
     }
 
+    const staticlib = b.addLibrary(.{
+        .linkage = .static,
+        .name = "dilithium_static",
+        .root_module = lib_mod,
+    });
+
     const dylib = b.addLibrary(.{
         .linkage = .dynamic,
         .name = "dilithium",
-        .root_module = dilithium_mod,
+        .root_module = lib_mod,
     });
 
     b.installArtifact(dylib);
+    b.installArtifact(staticlib);
 
-    const lib_check = b.addLibrary(.{ .name = "check", .root_module = dilithium_mod });
+    const lib_check = b.addLibrary(.{ .name = "check", .root_module = lib_mod });
     const check = b.step("check", "Build check");
     check.dependOn(&lib_check.step);
-
-
 }
