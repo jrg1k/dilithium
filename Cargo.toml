@@ -1,0 +1,23 @@
+[package]
+name = "dilithium"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand = "0.9.0"
+
+[build-dependencies]
+bindgen = "0.71.1"
+cc = "1.2.16"
+
+[profile.release]
+codegen-units = 1
+debug = 0
+lto = "fat"
+opt-level = 3
+overflow-checks = false
+panic = "abort"
+strip = "symbols"
+
+[dev-dependencies]
+cc = "1.2.16"
