@@ -16,7 +16,7 @@ extern "C" fn xmemcpy(
 }
 
 #[unsafe(no_mangle)]
-pub fn randombytes(out: *mut u8, outlen: usize) {
+extern "C" fn randombytes(out: *mut u8, outlen: usize) {
     rand::rng().fill_bytes(unsafe { slice::from_raw_parts_mut(out, outlen) });
 }
 

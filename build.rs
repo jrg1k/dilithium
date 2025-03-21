@@ -20,27 +20,26 @@ fn main() {
     let out_path = PathBuf::from(std::env::var("OUT_DIR").unwrap());
     let prefix = PathBuf::from("ref");
     for mode in ["2", "3", "5"] {
-        let name = format!("dilithium{}", mode);
+        let name = format!("dilithium{mode}");
         cc::Build::new()
             .files(cfiles.map(|f| prefix.join(f)))
             .warnings(true)
             .extra_warnings(true)
             .warnings_into_errors(true)
             .flag("-fomit-frame-pointer")
-            .pic(false)
             .define("DILITHIUM_MODE", mode)
             .compile(&name);
 
         let bindings = bindgen::builder()
             .headers(["ref/sign.h"])
-            .clang_arg(format!("-DDILITHIUM_MODE={}", mode))
+            .clang_arg(format!("-DDILITHIUM_MODE={mode}"))
             .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
             .use_core()
             .generate()
             .expect("failed to generate bindings");
 
         bindings
-            .write_to_file(out_path.join(format!("dilithium{}_bindings.rs", mode)))
+            .write_to_file(out_path.join(format!("dilithium{mode}_bindings.rs")))
             .expect("Couldn't write bindings!");
     }
 
