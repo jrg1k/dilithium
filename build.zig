@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .omit_frame_pointer = true,
         .single_threaded = true,
+        .pic = true,
     });
 
     _ = b.addModule("dilithium", .{
