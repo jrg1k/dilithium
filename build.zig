@@ -28,19 +28,12 @@ pub fn build(b: *std.Build) void {
         "symmetric-shake.c",
     };
 
-    const lib_mod = b.createModule(.{
+    const lib_mod = b.addModule("dilithium", .{
         .root_source_file = b.path("root.zig"),
         .target = target,
         .optimize = optimize,
         .omit_frame_pointer = true,
         .single_threaded = true,
-        .pic = true,
-    });
-
-    _ = b.addModule("dilithium", .{
-        .root_source_file = b.path("api.zig"),
-        .target = target,
-        .optimize = optimize,
     });
 
     lib_mod.addCSourceFiles(.{
@@ -59,11 +52,7 @@ pub fn build(b: *std.Build) void {
         });
     }
 
-    const staticlib = b.addLibrary(.{
-        .linkage = .static,
-        .name = "dilithium_static",
-        .root_module = lib_mod,
-    });
+    lib_mod.addIncludePath(b.path("ref"));
 
     const dylib = b.addLibrary(.{
         .linkage = .dynamic,
@@ -72,7 +61,6 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(dylib);
-    b.installArtifact(staticlib);
 
     const lib_check = b.addLibrary(.{ .name = "check", .root_module = lib_mod });
     const check = b.step("check", "Build check");
