@@ -34,7 +34,7 @@ fn main() {
             .compile(&name);
 
         let bindings = bindgen::builder()
-            .headers(["ref/sign.h"])
+            .headers(["ref/sign.h", "ref/packing.h"])
             .clang_arg(format!("-DDILITHIUM_MODE={mode}"))
             .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
             .use_core()
