@@ -14,6 +14,9 @@ fn main() {
 
     cc::Build::new()
         .file("ref/fips202.c")
+        .warnings(true)
+        .extra_warnings(true)
+        .warnings_into_errors(true)
         .flag("-fomit-frame-pointer")
         .compile("fips202");
 
