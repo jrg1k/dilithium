@@ -25,6 +25,17 @@ int crypto_sign_signature_internal(uint8_t *sig,
                                    const uint8_t *sk);
 
 typedef struct {
+  uint8_t key[SEEDBYTES];
+  uint8_t rho[SEEDBYTES];
+  polyvecl mat[K];
+  polyvecl s1;
+  polyveck s2, t1, t0;
+} KeyPair;
+
+#define crypto_sign_keypair_raw DILITHIUM_NAMESPACE(keypair_raw)
+KeyPair crypto_sign_keypair_raw(const uint8_t seed[SEEDBYTES]);
+
+typedef struct {
   uint8_t seedbuf[2*SEEDBYTES + TRBYTES + CRHBYTES];
   polyvecl mat[K], s1, y, z;
   polyveck t0, s2, w1, w0;

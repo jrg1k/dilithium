@@ -28,6 +28,46 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   return crypto_sign_keypair_internal(pk, sk, seed);
 }
 
+KeyPair crypto_sign_keypair_raw(const uint8_t seed[SEEDBYTES]) {
+  uint8_t rhoprime[CRHBYTES];
+  KeyPair kp;
+  polyvecl s1hat;
+
+  /* Get randomness for rho, rhoprime and key */
+  uint8_t kl[2] = { K, L};
+  keccak_state state;
+  shake256_init(&state);
+  shake256_absorb(&state, seed, SEEDBYTES);
+  shake256_absorb(&state, kl, 2);
+  shake256_finalize(&state);
+  shake256_squeeze(kp.rho, SEEDBYTES, &state);
+  shake256_squeeze(rhoprime, CRHBYTES, &state);
+  shake256_squeeze(kp.key, SEEDBYTES, &state);
+
+  /* Expand matrix */
+  polyvec_matrix_expand(kp.mat, kp.rho);
+
+  /* Sample short vectors s1 and s2 */
+  polyvecl_uniform_eta(&kp.s1, rhoprime, 0);
+  polyveck_uniform_eta(&kp.s2, rhoprime, L);
+
+  /* Matrix-vector multiplication */
+  s1hat = kp.s1;
+  polyvecl_ntt(&s1hat);
+  polyvec_matrix_pointwise_montgomery(&kp.t1, kp.mat, &s1hat);
+  polyveck_reduce(&kp.t1);
+  polyveck_invntt_tomont(&kp.t1);
+
+  /* Add error vector s2 */
+  polyveck_add(&kp.t1, &kp.t1, &kp.s2);
+
+  /* Extract t1 and write public key */
+  polyveck_caddq(&kp.t1);
+  polyveck_power2round(&kp.t1, &kp.t0, &kp.t1);
+
+  return kp;
+}
+
 int crypto_sign_keypair_internal(uint8_t *pk, uint8_t *sk, const uint8_t seed[SEEDBYTES]) {
   uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   uint8_t tr[TRBYTES];
